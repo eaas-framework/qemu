@@ -11,6 +11,18 @@
 #include "block/block.h"
 #include "qapi/error.h"
 
+int xmount_qemu_create_handle(void **pp_handle,
+                              const char *p_format,
+                              uint8_t debug);
+int xmount_qemu_destroy_handle(void **pp_handle);
+int xmount_qemu_open(void *p_handle,
+                     const char **pp_filename_arr,
+                     uint64_t filename_arr_len);
+int xmount_qemu_close(void *p_handle);
+int xmount_qemu_size(void *p_handle, uint64_t *p_size);
+const char *xmount_qemu_get_error_message(int err_num);
+
+
 
 enum XmountQemuErrors {
     XMOUNT_QEMU_OK = 0,
@@ -75,7 +87,7 @@ int xmount_qemu_open(void *p_handle,
 int xmount_qemu_close(void *p_handle) {
     XmountQemuHandle *handle = (XmountQemuHandle *)p_handle;
 
-    bdrv_close(&handle->bds);
+    bdrv_close(handle->bds);
 
     return XMOUNT_QEMU_OK;
 }
@@ -112,7 +124,7 @@ uint8_t LibXmount_Input_GetApiVersion() {
 }
 
 const char* LibXmount_Input_GetSupportedFormats() {
-    return "qemu\0";
+    return "qcow2\0";
 }
 
 void LibXmount_Input_GetFunctions(pts_LibXmountInputFunctions p_functions) {
