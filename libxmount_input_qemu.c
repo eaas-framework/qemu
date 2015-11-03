@@ -73,6 +73,12 @@ int xmount_qemu_create_handle(void **pp_handle,
     bdrv_init();
     handle->bds = bdrv_new();
 
+    Error *error = 0;
+    if (qemu_init_main_loop(&error)) {
+        error_report_err(error);
+        exit(EXIT_FAILURE);
+    }
+
     *pp_handle = handle;
     return XMOUNT_QEMU_OK;
 }
