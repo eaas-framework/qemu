@@ -230,6 +230,8 @@ util/module.o-cflags = -D'CONFIG_BLOCK_MODULES=$(block-modules)'
 
 ######################################################################
 
+libxmount_input_qemu$(DSOSUF): libxmount_input_qemu.o $(block-obj-y) $(crypto-obj-y) $(qom-obj-y) libqemuutil.a libqemustub.a
+
 qemu-img.o: qemu-img-cmds.h
 
 qemu-img$(EXESUF): qemu-img.o $(block-obj-y) $(crypto-obj-y) $(qom-obj-y) libqemuutil.a libqemustub.a
