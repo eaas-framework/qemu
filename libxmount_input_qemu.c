@@ -20,8 +20,27 @@ int xmount_qemu_open(void *p_handle,
                      uint64_t filename_arr_len);
 int xmount_qemu_close(void *p_handle);
 int xmount_qemu_size(void *p_handle, uint64_t *p_size);
+int xmount_qemu_read(void *p_handle,
+                     char *p_buf,
+                     off_t offset,
+                     size_t count,
+                     size_t *p_read,
+                     int *p_errno);
+int xmount_qemu_write(void *p_handle,
+                      const char *p_buf,
+                      off_t offset,
+                      size_t count,
+                      size_t *p_written,
+                      int *p_errno);
+int xmount_qemu_options_help(const char **pp_help);
+int xmount_qemu_options_parse(void *p_handle,
+                              uint32_t options_count,
+                              const pts_LibXmountOptions *pp_options,
+                              const char **pp_error);
+int xmount_qemu_get_infofile_content(void *p_handle,
+                                     const char **pp_info_buf);
 const char *xmount_qemu_get_error_message(int err_num);
-
+int xmount_qemu_free_buffer(void *p_buf);
 
 
 enum XmountQemuErrors {
@@ -102,6 +121,44 @@ int xmount_qemu_size(void *p_handle,
     return XMOUNT_QEMU_OK;
 }
 
+int xmount_qemu_read(void *p_handle,
+                     char *p_buf,
+                     off_t offset,
+                     size_t count,
+                     size_t *p_read,
+                     int *p_errno) {
+    return 1;
+}
+
+int xmount_qemu_write(void *p_handle,
+                      const char *p_buf,
+                      off_t offset,
+                      size_t count,
+                      size_t *p_written,
+                      int *p_errno) {
+    return 1;
+}
+
+int xmount_qemu_options_help(const char **pp_help) {
+    *pp_help = "";
+    return XMOUNT_QEMU_OK;
+}
+
+int xmount_qemu_options_parse(void *p_handle,
+                              uint32_t options_count,
+                              const pts_LibXmountOptions *pp_options,
+                              const char **pp_error) {
+    return XMOUNT_QEMU_OK;
+}
+
+int xmount_qemu_get_infofile_content(void *p_handle,
+                                     const char **pp_info_buf) {
+    *pp_info_buf = "";
+    return XMOUNT_QEMU_OK;
+}
+
+
+
 const char *xmount_qemu_get_error_message(int err_num) {
     switch(err_num) {
     case XMOUNT_QEMU_OK:
@@ -119,6 +176,11 @@ const char *xmount_qemu_get_error_message(int err_num) {
     }
 }
 
+int xmount_qemu_free_buffer(void *p_buf) {
+    free(p_buf);
+    return XMOUNT_QEMU_OK;
+}
+
 uint8_t LibXmount_Input_GetApiVersion() {
     return LIBXMOUNT_INPUT_API_VERSION;
 }
@@ -133,5 +195,11 @@ void LibXmount_Input_GetFunctions(pts_LibXmountInputFunctions p_functions) {
     p_functions->Open = xmount_qemu_open;
     p_functions->Close = xmount_qemu_close;
     p_functions->Size = xmount_qemu_size;
+    p_functions->Read = xmount_qemu_read;
+    p_functions->Write = xmount_qemu_write;
+    p_functions->OptionsHelp = xmount_qemu_options_help;
+    p_functions->OptionsParse = xmount_qemu_options_parse;
+    p_functions->GetInfofileContent = xmount_qemu_get_infofile_content;
     p_functions->GetErrorMessage = xmount_qemu_get_error_message;
+    p_functions->FreeBuffer = xmount_qemu_free_buffer;
 }
