@@ -133,9 +133,11 @@ int xmount_qemu_size(void *p_handle,
                      uint64_t *p_size) {
     XmountQemuHandle *handle = (XmountQemuHandle *)p_handle;
 
-    *p_size = bdrv_getlength(handle->bds);
-    LIBXMOUNT_LOG_DEBUG(handle->debug,
-                        "Returned size of block driver: %" PRIu64 "\n", *p_size);
+    if (p_size) {
+        *p_size = bdrv_getlength(handle->bds);
+        LIBXMOUNT_LOG_DEBUG(handle->debug,
+                            "[QEMU] Returned size of block driver: %" PRIu64 "\n", *p_size);
+    }
     return XMOUNT_QEMU_OK;
 }
 
@@ -288,7 +290,14 @@ int xmount_qemu_options_parse(void *p_handle,
 
 int xmount_qemu_get_infofile_content(void *p_handle,
                                      const char **pp_info_buf) {
-    *pp_info_buf = "";
+    // xmount required this to be a free-able copy
+    char *info = 0;
+    int l = asprintf(&info, "\n");
+    if (!info || l < 0) {
+        return XMOUNT_QEMU_BAD_ALLOC;
+    }
+
+    *pp_info_buf = info;
     return XMOUNT_QEMU_OK;
 }
 
