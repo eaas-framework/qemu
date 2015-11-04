@@ -53,10 +53,14 @@ enum XmountQemuErrors {
     XMOUNT_QEMU_READ_BEYOND_END_OF_IMAGE,
 };
 
+#define QEMU_OPTION_WRITABLE "qemuwritable"
+#define QEMU_OPTION_WRITABLE_DEFAULT "false"
+
 typedef struct {
     uint8_t debug;
 
     BlockDriverState *bds;
+    char writable;
 } XmountQemuHandle;
 
 
@@ -102,7 +106,10 @@ int xmount_qemu_open(void *p_handle,
         return XMOUNT_QEMU_SINGLE_FILE;
     }
 
-    int flags = BDRV_O_RDWR;
+    int flags = 0;
+    if (handle->writable) {
+        flags = BDRV_O_RDWR;
+    }
     Error *error = 0;
     if (bdrv_open(&handle->bds, pp_filename_arr[0], 0, 0, flags, &error)) {
         printf("Error opening Qemu block driver: %s\n", error_get_pretty(error));
@@ -193,7 +200,16 @@ int xmount_qemu_write(void *p_handle,
 }
 
 int xmount_qemu_options_help(const char **pp_help) {
-    *pp_help = "";
+    char *help = 0;
+    int l = asprintf(&help, "    %-12s : Specifies if write operations are to be allowed on "
+                     "the source image. Default: %s\n",
+                     QEMU_OPTION_WRITABLE, QEMU_OPTION_WRITABLE_DEFAULT);
+
+    if (!help || l < 0) {
+        return XMOUNT_QEMU_BAD_ALLOC;
+    }
+
+    *pp_help = help;
     return XMOUNT_QEMU_OK;
 }
 
@@ -201,6 +217,26 @@ int xmount_qemu_options_parse(void *p_handle,
                               uint32_t options_count,
                               const pts_LibXmountOptions *pp_options,
                               const char **pp_error) {
+    XmountQemuHandle *handle = (XmountQemuHandle *)p_handle;
+
+    for (uint32_t i = 0; i < options_count; ++i) {
+        pts_LibXmountOptions option = pp_options[i];
+
+        if (strcmp(option->p_key, QEMU_OPTION_WRITABLE) == 0) {
+            char *value = (char *)calloc(strlen(option->p_value) + 1,
+                                          sizeof(char));
+            if (!value) {
+                return XMOUNT_QEMU_BAD_ALLOC;
+            }
+            for (size_t l = 0; l < strlen(option->p_value); ++l) {
+                value[l] = tolower(option->p_value[l]);
+            }
+
+            handle->writable = (strcmp(value, "true") == 0 || strcmp(value, "1"));
+            free(value);
+        }
+    }
+
     return XMOUNT_QEMU_OK;
 }
 
