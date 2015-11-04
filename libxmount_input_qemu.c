@@ -49,6 +49,8 @@ enum XmountQemuErrors {
     XMOUNT_QEMU_BAD_ALLOC,
     XMOUNT_QEMU_SINGLE_FILE,
     XMOUNT_QEMU_CANNOT_OPEN,
+    XMOUNT_QEMU_CANNOT_READ_DATA,
+    XMOUNT_QEMU_READ_BEYOND_END_OF_IMAGE,
 };
 
 typedef struct {
@@ -134,7 +136,51 @@ int xmount_qemu_read(void *p_handle,
                      size_t count,
                      size_t *p_read,
                      int *p_errno) {
-    return 1;
+    XmountQemuHandle *handle = (XmountQemuHandle *)p_handle;
+
+    if (!p_buf) {
+        LIBXMOUNT_LOG_ERROR("[QEMU] p_buf argument to read function was 0.");
+        if (p_errno) {
+            *p_errno = EINVAL;
+        }
+        return XMOUNT_QEMU_CANNOT_READ_DATA;
+    }
+    if (offset < 0) {
+        LIBXMOUNT_LOG_ERROR("[QEMU] offset argument to read function is negative.");
+        if (p_errno) {
+            *p_errno = EINVAL;
+        }
+        return XMOUNT_QEMU_CANNOT_READ_DATA;
+    }
+    if (offset + count > bdrv_getlength(handle->bds)) {
+        if (p_errno) {
+            *p_errno = EINVAL;
+        }
+        return XMOUNT_QEMU_READ_BEYOND_END_OF_IMAGE;
+    }
+
+
+    LIBXMOUNT_LOG_DEBUG(handle->debug, "[QEMU] Reading %d bytes at offset %d\n", count, offset);
+    if (p_read) {
+        *p_read = 0;
+    }
+
+    int ret = bdrv_pread(handle->bds, offset, p_buf, count);
+    if (ret < 0) {
+        LIBXMOUNT_LOG_ERROR("[QEMU] bdrv_pread() returned with error code %d\n", ret)
+        if (p_errno) {
+            *p_errno = -ret;
+        }
+        return XMOUNT_QEMU_CANNOT_READ_DATA;
+    }
+    if (p_read) {
+        *p_read = ret;
+    }
+    if (p_errno) {
+        *p_errno = 0;
+    }
+
+    return XMOUNT_QEMU_OK;
 }
 
 int xmount_qemu_write(void *p_handle,
