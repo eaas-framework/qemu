@@ -330,7 +330,7 @@ uint8_t LibXmount_Input_GetApiVersion() {
 }
 
 const char* LibXmount_Input_GetSupportedFormats() {
-    return "qcow2\0";
+    return "qemu\0";
 }
 
 void LibXmount_Input_GetFunctions(pts_LibXmountInputFunctions p_functions) {
