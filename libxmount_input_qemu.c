@@ -10,6 +10,7 @@
 
 #include "block/block.h"
 #include "qapi/error.h"
+#include "qemu/main-loop.h"
 
 int xmount_qemu_create_handle(void **pp_handle,
                               const char *p_format,
@@ -70,14 +71,14 @@ int xmount_qemu_create_handle(void **pp_handle,
     memset(handle, 0, sizeof(XmountQemuHandle));
     handle->debug = debug;
 
-    bdrv_init();
-    handle->bds = bdrv_new();
-
     Error *error = 0;
     if (qemu_init_main_loop(&error)) {
         error_report_err(error);
         exit(EXIT_FAILURE);
     }
+
+    bdrv_init();
+    handle->bds = bdrv_new();
 
     *pp_handle = handle;
     return XMOUNT_QEMU_OK;
