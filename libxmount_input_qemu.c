@@ -50,7 +50,9 @@ enum XmountQemuErrors {
     XMOUNT_QEMU_SINGLE_FILE,
     XMOUNT_QEMU_CANNOT_OPEN,
     XMOUNT_QEMU_CANNOT_READ_DATA,
+    XMOUNT_QEMU_CANNOT_WRITE_DATA,
     XMOUNT_QEMU_READ_BEYOND_END_OF_IMAGE,
+    XMOUNT_QEMU_WRITE_BEYOND_END_OF_IMAGE,
 };
 
 #define QEMU_OPTION_WRITABLE "qemuwritable"
@@ -196,7 +198,51 @@ int xmount_qemu_write(void *p_handle,
                       size_t count,
                       size_t *p_written,
                       int *p_errno) {
-    return 1;
+    XmountQemuHandle *handle = (XmountQemuHandle *)p_handle;
+
+    if (!p_buf) {
+        LIBXMOUNT_LOG_ERROR("[QEMU] p_buf argument to write function was 0.");
+        if (p_errno) {
+            *p_errno = EINVAL;
+        }
+        return XMOUNT_QEMU_CANNOT_WRITE_DATA;
+    }
+    if (offset < 0) {
+        LIBXMOUNT_LOG_ERROR("[QEMU] offset argument to write function is negative.");
+        if (p_errno) {
+            *p_errno = EINVAL;
+        }
+        return XMOUNT_QEMU_CANNOT_WRITE_DATA;
+    }
+    if (offset + count > bdrv_getlength(handle->bds)) {
+        if (p_errno) {
+            *p_errno = EINVAL;
+        }
+        return XMOUNT_QEMU_WRITE_BEYOND_END_OF_IMAGE;
+    }
+
+
+    LIBXMOUNT_LOG_DEBUG(handle->debug, "[QEMU] Writing %d bytes at offset %d\n", count, offset);
+    if (p_written) {
+        *p_written = 0;
+    }
+
+    int ret = bdrv_pwrite(handle->bds, offset, p_buf, count);
+    if (ret < 0) {
+        LIBXMOUNT_LOG_ERROR("[QEMU] bdrv_pwrite() returned with error code %d\n", ret)
+        if (p_errno) {
+            *p_errno = -ret;
+        }
+        return XMOUNT_QEMU_CANNOT_WRITE_DATA;
+    }
+    if (p_written) {
+        *p_written = ret;
+    }
+    if (p_errno) {
+        *p_errno = 0;
+    }
+
+    return XMOUNT_QEMU_OK;
 }
 
 int xmount_qemu_options_help(const char **pp_help) {
