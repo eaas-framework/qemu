@@ -453,7 +453,8 @@ ifneq ($(CONFIG_MODULES),)
 	done
 endif
 ifeq ($(CONFIG_LIBXMOUNT_INPUT),y)
-	$(INSTALL_LIB) libxmount_input_qemu.so $(LIBXMOUNT_INPUT_MODULE_DIR)
+	$(INSTALL_DIR) "$(DESTDIR)$(LIBXMOUNT_INPUT_MODULE_DIR)"
+	$(INSTALL_LIB) libxmount_input_qemu.so $(DESTDIR)$(LIBXMOUNT_INPUT_MODULE_DIR)
 endif
 ifneq ($(HELPERS-y),)
 	$(call install-prog,$(HELPERS-y),$(DESTDIR)$(libexecdir))
