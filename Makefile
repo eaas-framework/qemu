@@ -452,6 +452,9 @@ ifneq ($(CONFIG_MODULES),)
 		test -z "$(STRIP)" || $(STRIP) "$$t"; \
 	done
 endif
+ifeq ($(CONFIG_LIBXMOUNT_INPUT),y)
+	$(INSTALL_LIB) libxmount_input_qemu.so $(LIBXMOUNT_INPUT_MODULE_DIR)
+endif
 ifneq ($(HELPERS-y),)
 	$(call install-prog,$(HELPERS-y),$(DESTDIR)$(libexecdir))
 endif

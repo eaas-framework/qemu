@@ -3548,17 +3548,21 @@ fi
 # libxmount_input probe
 
 if test "$libxmount_input" = "yes" ; then
-  cat > $TMPC << EOF
+  if $pkg_config --exists libxmount; then
+    libxmount_cflags=$(pkg-config --cflags libxmount)
+    libxmount_input_module_dir=$(pkg-config --variable=inputmoduledir libxmount)
+
+    cat > $TMPC << EOF
 #include <libxmount_input/libxmount_input.h>
 
 int main(void) { return 0; }
 EOF
 
-  if compile_prog "-I/usr/include/xmount -I/usr/local/include/xmount" ""; then
-    xmount_cflags="-I/usr/include/xmount -I/usr/local/include/xmount"
-    CFLAGS="-fPIC"
-  else
-    feature_not_found "xmount_input" "provide the libxmount_* headers"
+    if compile_prog $libxmount_cflags ""; then
+      CFLAGS="-fPIC"
+    else
+      feature_not_found "xmount_input" "provide the libxmount_* headers"
+    fi
   fi
 fi
 
@@ -5302,7 +5306,9 @@ if test "$vhdx" = "yes" ; then
 fi
 
 if test "$libxmount_input" = "yes" ; then
-  echo "LIBXMOUNT_INPUT_CFLAGS=$xmount_cflags" >> $config_host_mak
+  echo "CONFIG_LIBXMOUNT_INPUT=y" >> $config_host_mak
+  echo "LIBXMOUNT_CFLAGS=$libxmount_cflags" >> $config_host_mak
+  echo "LIBXMOUNT_INPUT_MODULE_DIR=$libxmount_input_module_dir" >> $config_host_mak
 fi
 
 # USB host support
