@@ -230,6 +230,11 @@ util/module.o-cflags = -D'CONFIG_BLOCK_MODULES=$(block-modules)'
 
 ######################################################################
 
+libxmount_input_qemu.mo: libxmount_input_qemu.o $(block-obj-y) $(crypto-obj-y) $(qom-obj-y) libqemuutil.a libqemustub.a
+ifeq ($(CONFIG_LIBXMOUNT_INPUT),y)
+all: libxmount_input_qemu$(DSOSUF)
+endif
+
 qemu-img.o: qemu-img-cmds.h
 
 qemu-img$(EXESUF): qemu-img.o $(block-obj-y) $(crypto-obj-y) $(qom-obj-y) libqemuutil.a libqemustub.a
@@ -449,6 +454,10 @@ ifneq ($(CONFIG_MODULES),)
 		$(INSTALL_LIB) $$s "$$t"; \
 		test -z "$(STRIP)" || $(STRIP) "$$t"; \
 	done
+endif
+ifeq ($(CONFIG_LIBXMOUNT_INPUT),y)
+	$(INSTALL_DIR) "$(DESTDIR)$(LIBXMOUNT_INPUT_MODULE_DIR)"
+	$(INSTALL_LIB) libxmount_input_qemu.so $(DESTDIR)$(LIBXMOUNT_INPUT_MODULE_DIR)
 endif
 ifneq ($(HELPERS-y),)
 	$(call install-prog,$(HELPERS-y),$(DESTDIR)$(libexecdir))

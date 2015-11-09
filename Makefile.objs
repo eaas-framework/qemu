@@ -109,3 +109,6 @@ qga-vss-dll-obj-y = qga/
 # contrib
 ivshmem-client-obj-y = contrib/ivshmem-client/
 ivshmem-server-obj-y = contrib/ivshmem-server/
+
+libxmount_input_qemu.mo-objs := libxmount_input_qemu.o
+libxmount_input_qemu.o-cflags := $(LIBXMOUNT_CFLAGS)
