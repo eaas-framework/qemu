@@ -109,6 +109,9 @@ Build-Depends: debhelper (>= 9),
 ##--enable-netmap todo bsd
 ##--enable-quorum todo needs gcrypt
 ##--enable-xen-pci-passthrough todo
+ libbz2-dev,
+ liblzo2-dev,
+ libsnappy-dev
 Build-Conflicts: oss4-dev
 Standards-Version: 3.9.6
 Homepage: http://www.qemu.org/
