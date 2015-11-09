@@ -55,9 +55,13 @@ Build-Depends: debhelper (>= 9),
 ## --enable-numa	i386|amd64|ia64|mips*|powerpc*|ppc64|x32
 # libnuma-dev,
 # libcacard is now a standalone project outside qemu's repository
-# --enable-smartcard
- libcacard-dev (>= 2.5),
- libtool-bin,
+# and not part of Ubuntu 14.10
+:debian:# --enable-smartcard
+:debian: libcacard-dev (>= 2.5),
+:ubuntu:## --enable-smartcard
+# Ubuntu 14.10 has not switched to split libtool package yet
+:debian: libtool-bin,
+:ubuntu: libtool,
 # --with-system-pixman
  libpixman-1-dev,
 # audio-drv-list += pa
@@ -69,8 +73,9 @@ Build-Depends: debhelper (>= 9),
 # note: libsdl2-dev is in universe on ubuntu
 # --enable-sdl --with-sdlabi=1.2
  libsdl1.2-dev (>> 1.2.1),
-# --enable-seccomp	linux-amd64|linux-i386
- libseccomp-dev (>> 2.1.0) [linux-amd64 linux-i386],
+# seccomp-dev is too old in ubuntu trusty
+:debian:# --enable-seccomp	linux-amd64|linux-i386
+:debian: libseccomp-dev (>> 2.1.0) [linux-amd64 linux-i386],
 # --enable-spice	linux-amd64|linux-i386
  libspice-server-dev (>= 0.12.2~) [linux-amd64 linux-i386],
  libspice-protocol-dev (>= 0.12.3~) [linux-amd64 linux-i386],
