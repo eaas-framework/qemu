@@ -24,11 +24,9 @@ Signed-off-by: Michael Tokarev <mjt@tls.msk.ru>
  hw/acpi/core.c      | 5 +++++
  2 files changed, 11 insertions(+)
 
-diff --git a/hw/acpi/aml-build.c b/hw/acpi/aml-build.c
-index 0d4b324..1837534 100644
 --- a/hw/acpi/aml-build.c
 +++ b/hw/acpi/aml-build.c
-@@ -1135,6 +1135,8 @@ Aml *aml_unicode(const char *str)
+@@ -1135,6 +1135,8 @@
      return var;
  }
  
@@ -37,7 +35,7 @@ index 0d4b324..1837534 100644
  void
  build_header(GArray *linker, GArray *table_data,
               AcpiTableHeader *h, const char *sig, int len, uint8_t rev)
-@@ -1148,6 +1150,10 @@ build_header(GArray *linker, GArray *table_data,
+@@ -1148,6 +1150,10 @@
      h->oem_revision = cpu_to_le32(1);
      memcpy(h->asl_compiler_id, ACPI_BUILD_APPNAME4, 4);
      h->asl_compiler_revision = cpu_to_le32(1);
@@ -48,11 +46,9 @@ index 0d4b324..1837534 100644
      h->checksum = 0;
      /* Checksum to be filled in by Guest linker */
      bios_linker_loader_add_checksum(linker, ACPI_BUILD_TABLE_FILE,
-diff --git a/hw/acpi/core.c b/hw/acpi/core.c
-index fe6215a..a602d76 100644
 --- a/hw/acpi/core.c
 +++ b/hw/acpi/core.c
-@@ -54,6 +54,7 @@ static const char unsigned dfl_hdr[ACPI_TABLE_HDR_SIZE - ACPI_TABLE_PFX_SIZE] =
+@@ -54,6 +54,7 @@
  
  char unsigned *acpi_tables;
  size_t acpi_tables_len;
@@ -60,7 +56,7 @@ index fe6215a..a602d76 100644
  
  static QemuOptsList qemu_acpi_opts = {
      .name = "acpi",
-@@ -227,6 +228,10 @@ static void acpi_table_install(const char unsigned *blob, size_t bloblen,
+@@ -227,6 +228,10 @@
      /* recalculate checksum */
      ext_hdr->checksum = acpi_checksum((const char unsigned *)ext_hdr +
                                        ACPI_TABLE_PFX_SIZE, acpi_payload_size);
@@ -71,6 +67,3 @@ index fe6215a..a602d76 100644
  }
  
  void acpi_table_add(const QemuOpts *opts, Error **errp)
--- 
-2.1.4
-

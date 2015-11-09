@@ -9,7 +9,7 @@ The same applies to pipe2() call.
 
 --- a/configure
 +++ b/configure
-@@ -3135,6 +3135,14 @@ cat > $TMPC << EOF
+@@ -3411,6 +3411,14 @@
  #include <fcntl.h>
  #include <sys/stat.h>
  
@@ -24,7 +24,7 @@ The same applies to pipe2() call.
  int main(void)
  {
      utimensat(AT_FDCWD, "foo", NULL, 0);
-@@ -3152,6 +3161,10 @@ cat > $TMPC << EOF
+@@ -3428,6 +3436,10 @@
  #include <unistd.h>
  #include <fcntl.h>
  
