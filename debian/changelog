@@ -1,3 +1,11 @@
+qemu (1:2.4.50+dfsg-0bwfla1a) UNRELEASED; urgency=medium
+
+  * Non-maintainer upload.
+  * Minor fix to build system resulting in empty libxmount_input_qemu.so
+  * Add missing manpages to debian/
+
+ -- Thomas Liebetraut <thomas@idefix>  Mon, 09 Nov 2015 14:49:27 +0100
+
 qemu (1:2.4.50+dfsg-0bwfla1) UNRELEASED; urgency=medium
 
   * Non-maintainer upload.
