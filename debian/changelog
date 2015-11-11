@@ -1,3 +1,12 @@
+qemu (1:2.4.50+dfsg-0bwfla1) UNRELEASED; urgency=medium
+
+  * Non-maintainer upload.
+  * First "complete" package for the EaaS framework
+  * In follows (roughly) Qemu master
+  * Includes a libxmount_input_qemu module to be used with bwfla's xmount package
+
+ -- Thomas Liebetraut <thomas@idefix>  Mon, 09 Nov 2015 14:49:27 +0100
+
 qemu (1:2.4+dfsg-4) unstable; urgency=medium
 
   * applied 3 patches from upstream to fix virtio-net
