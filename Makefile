@@ -231,6 +231,7 @@ util/module.o-cflags = -D'CONFIG_BLOCK_MODULES=$(block-modules)'
 ######################################################################
 
 libxmount_input_qemu.mo: libxmount_input_qemu.o $(block-obj-y) $(crypto-obj-y) $(qom-obj-y) libqemuutil.a libqemustub.a
+libxmount_input_qemu$(DSOSUF): libxmount_input_qemu.o $(block-obj-y) $(crypto-obj-y) $(qom-obj-y) libqemuutil.a libqemustub.a
 ifeq ($(CONFIG_LIBXMOUNT_INPUT),y)
 all: libxmount_input_qemu$(DSOSUF)
 endif
