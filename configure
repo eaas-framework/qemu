@@ -3545,11 +3545,13 @@ int main(void) { return 0; }
 EOF
 
     if compile_prog $libxmount_cflags ""; then
-      CFLAGS="-fPIC"
+      CFLAGS="-fPIC $CFLAGS"
     else
       feature_not_found "xmount_input" "provide the libxmount_* headers"
     fi
   fi
+else
+  libxmount_input=no
 fi
 
 ##########################################
