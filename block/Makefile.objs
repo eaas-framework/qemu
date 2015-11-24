@@ -20,6 +20,7 @@ block-obj-$(CONFIG_RBD) += rbd.o
 block-obj-$(CONFIG_GLUSTERFS) += gluster.o
 block-obj-$(CONFIG_ARCHIPELAGO) += archipelago.o
 block-obj-$(CONFIG_LIBSSH2) += ssh.o
+block-obj-$(CONFIG_LIBEWF) += ewf.o
 block-obj-y += accounting.o
 block-obj-y += write-threshold.o
 
@@ -38,6 +39,7 @@ gluster.o-libs     := $(GLUSTERFS_LIBS)
 ssh.o-cflags       := $(LIBSSH2_CFLAGS)
 ssh.o-libs         := $(LIBSSH2_LIBS)
 archipelago.o-libs := $(ARCHIPELAGO_LIBS)
+ewf.o-libs         := $(LIBEWF_LIBS)
 block-obj-m        += dmg.o
 dmg.o-libs         := $(BZIP2_LIBS)
 qcow.o-libs        := -lz

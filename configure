@@ -342,6 +342,7 @@ numa=""
 tcmalloc="no"
 jemalloc="no"
 libxmount_input=""
+libewf=""
 
 # parse CC options first
 for opt do
@@ -1164,6 +1165,10 @@ for opt do
   ;;
   --disable-xmount-input) libxmount_input="no"
   ;;
+  --enable-libewf) libewf="yes"
+  ;;
+  --disable-libewf) libewf="no"
+  ;;
   *)
       echo "ERROR: unknown option $opt"
       echo "Try '$0 --help' for more information"
@@ -1388,6 +1393,7 @@ disabled with --disable-FEATURE, default is enabled if available:
   tcmalloc        tcmalloc support
   jemalloc        jemalloc support
   xmount-input    libxmount_input Qemu module
+  libewf          libewf support
 
 NOTE: The object files are built at the place where configure is launched
 EOF
@@ -3555,6 +3561,29 @@ else
 fi
 
 ##########################################
+# libewf probe
+if test "$libewf" != "no" ; then
+  cat > $TMPC <<EOF
+#include <libewf.h>
+int main(void) {
+    (void) libewf_get_version();
+    return 0;
+}
+EOF
+  libewf_libs=$(pkg-config --libs libewf libbfio)
+  if compile_prog "" "$libewf_libs" ; then
+    libewf=yes
+    libs_tools="$libewf_libs $libs_tools"
+    libs_softmmu="$libewf_libs $libs_softmmu"
+  else
+    if test "$libewf" = "yes" ; then
+      feature_not_found "libewf backend support"
+    fi
+    libewf=no
+  fi
+fi
+
+##########################################
 # signalfd probe
 signalfd="no"
 cat > $TMPC << EOF
@@ -4800,6 +4829,7 @@ echo "NUMA host support $numa"
 echo "tcmalloc support  $tcmalloc"
 echo "jemalloc support  $jemalloc"
 echo "xmount_input support $libxmount_input"
+echo "libewf support    $libewf"
 
 if test "$sdl_too_old" = "yes"; then
 echo "-> Your SDL version is too old - please upgrade to have SDL support"
@@ -5297,6 +5327,11 @@ if test "$libxmount_input" = "yes" ; then
   echo "CONFIG_LIBXMOUNT_INPUT=y" >> $config_host_mak
   echo "LIBXMOUNT_CFLAGS=$libxmount_cflags" >> $config_host_mak
   echo "LIBXMOUNT_INPUT_MODULE_DIR=$libxmount_input_module_dir" >> $config_host_mak
+fi
+
+if test "$libewf" = "yes" ; then
+  echo "CONFIG_LIBEWF=m" >> $config_host_mak
+  echo "LIBEWF_LIBS=$libewf_libs" >> $config_host_mak
 fi
 
 # USB host support
