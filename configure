@@ -341,6 +341,7 @@ vhdx=""
 numa=""
 tcmalloc="no"
 jemalloc="no"
+libewf=""
 
 # parse CC options first
 for opt do
@@ -1386,6 +1387,7 @@ disabled with --disable-FEATURE, default is enabled if available:
   numa            libnuma support
   tcmalloc        tcmalloc support
   jemalloc        jemalloc support
+  libewf          libewf support
 
 NOTE: The object files are built at the place where configure is launched
 EOF
@@ -4796,6 +4798,7 @@ echo "bzip2 support     $bzip2"
 echo "NUMA host support $numa"
 echo "tcmalloc support  $tcmalloc"
 echo "jemalloc support  $jemalloc"
+echo "libewf support    $libewf"
 
 if test "$sdl_too_old" = "yes"; then
 echo "-> Your SDL version is too old - please upgrade to have SDL support"
