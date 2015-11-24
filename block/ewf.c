@@ -77,6 +77,8 @@ int qemu_libbfio_get_size(qemu_libbfio_io_handle *io_handle, size64_t *size,
 static int ewf_probe(const uint8_t *buf, int buf_size, const char *filename);
 static int ewf_open(BlockDriverState *bs, QDict *options, int flags,
                     Error **errp);
+int ewf_read(BlockDriverState *bs, int64_t sector_num, uint8_t *buf,
+             int nb_sectors);
 static void ewf_close(BlockDriverState *bs);
 static void bdrv_ewf_init(void);
 
@@ -542,6 +544,32 @@ cleanup:
     return ret;
 }
 
+int ewf_read(BlockDriverState *bs, int64_t sector_num, uint8_t *buf,
+             int nb_sectors) {
+    BDRVEwfState *s = (BDRVEwfState *) bs->opaque;
+    libewf_error_t *ewf_error = 0;
+
+    size_t bytes_count = nb_sectors * BDRV_SECTOR_SIZE;
+    int64_t bytes_offset = (sector_num * BDRV_SECTOR_SIZE);
+
+    /* Try to read requested blocks from EWF file */
+    ssize_t ret = libewf_handle_read_random(s->ewf_handle, buf, bytes_count, bytes_offset, &ewf_error);
+    if (ret < 0 || ret != bytes_count) {
+#ifdef DEBUG_EWF
+        DPRINTF("%s: could not read from ewf handle.\n", __FUNC__);
+        gchar *error_msg = g_malloc0(1024);
+        if (libewf_error_sprint(ewf_error, error_msg, 1023) == 1) {
+            DPRINTF("%s: libewf error was: %s\n", __FUNC__, error_msg);
+        }
+        g_free(error_msg);
+        libewf_error_free(&ewf_error);
+#endif
+        return -EIO; /* Failure! */
+    }
+
+    return 0;
+}
+
 static void ewf_close(BlockDriverState *bs) {
     BDRVEwfState *s = (BDRVEwfState *) bs->opaque;
     libewf_error_t *ewf_error = 0;
@@ -592,6 +620,7 @@ static BlockDriver bdrv_ewf = {
  	.instance_size = sizeof(BDRVEwfState),
 	.bdrv_probe = ewf_probe,
 	.bdrv_open = ewf_open,
+	.bdrv_read = ewf_read,
 	.bdrv_close = ewf_close,
 };
 
