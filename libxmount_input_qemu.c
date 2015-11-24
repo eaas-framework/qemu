@@ -280,7 +280,7 @@ int xmount_qemu_options_parse(void *p_handle,
                 value[l] = tolower(option->p_value[l]);
             }
 
-            handle->writable = (strcmp(value, "true") == 0 || strcmp(value, "1"));
+            handle->writable = (strcmp(value, "true") == 0 || strcmp(value, "1") == 0);
             free(value);
         }
     }
