@@ -45,6 +45,8 @@ typedef struct qemu_libbfio_io_handle {
 } qemu_libbfio_io_handle;
 
 typedef struct BDRVEwfState {
+    libewf_handle_t *ewf_handle;
+    libbfio_pool_t *bfio_pool;
 } BDRVEwfState;
 
 
@@ -346,7 +348,198 @@ static int ewf_probe(const uint8_t *buf, int buf_size, const char *filename)
 static int ewf_open(BlockDriverState *bs, QDict *options, int flags,
                     Error **errp)
 {
-    return -1;
+    BDRVEwfState *s = (BDRVEwfState *) bs->opaque;
+    qemu_libbfio_io_handle *io_handle = 0;
+    libbfio_handle_t *bfio_handle = 0;
+    libewf_error_t *ewf_error = 0;
+    libbfio_error_t *bfio_error = 0;
+    int pool_handle_index;
+    uint32_t ewf_bytes_per_sector = 0;
+    uint64_t ewf_media_sectors = 0;
+    int ret = 0;
+
+    // no write support (yet?)
+    bs->read_only = true;
+
+    s->bfio_pool = 0;
+    s->ewf_handle = 0;
+
+    if (qemu_libbfio_io_handle_initialize(&io_handle, &bfio_error) != 1) {
+        error_setg(errp, "Could not initialize libbfio qemu io handle.");
+
+        gchar *error_msg = g_malloc0(1024);
+        if (libbfio_error_sprint(bfio_error, error_msg, 1023) == 1) {
+            error_append_hint(errp, "libbfio error was: %s\n", error_msg);
+        }
+        g_free(error_msg);
+        libbfio_error_free(&bfio_error);
+
+        ret = -EINVAL;
+        goto cleanup;
+    }
+
+    if (qemu_libbfio_io_handle_set_file(io_handle, bs->file->bs, &bfio_error) != 1) {
+        error_setg(errp, "Could not assign child BDS to libbfio handle.");
+
+        gchar *error_msg = g_malloc0(1024);
+        if (libbfio_error_sprint(bfio_error, error_msg, 1023) == 1) {
+            error_append_hint(errp, "libbfio error was: %s\n", error_msg);
+        }
+        g_free(error_msg);
+        libbfio_error_free(&bfio_error);
+
+        ret = -EINVAL;
+        goto cleanup;
+    }
+
+    if (libbfio_handle_initialize(
+            &bfio_handle,
+            (intptr_t *)io_handle,
+            (int (*)(intptr_t **, libbfio_error_t **))qemu_libbfio_io_handle_free,
+            (int (*)(intptr_t **, intptr_t *, libbfio_error_t **))qemu_libbfio_io_handle_clone,
+            (int (*)(intptr_t *, int, libbfio_error_t **))qemu_libbfio_open,
+            (int (*)(intptr_t *, libbfio_error_t **))qemu_libbfio_close,
+            (ssize_t (*)(intptr_t *, uint8_t *, size_t, libbfio_error_t **))qemu_libbfio_read,
+            (ssize_t (*)(intptr_t *, const uint8_t *, size_t, libbfio_error_t **))qemu_libbfio_write,
+            (off64_t (*)(intptr_t *, off64_t, int, libbfio_error_t **))qemu_libbfio_seek_offset,
+            (int (*)(intptr_t *, libbfio_error_t **))qemu_libbfio_exists,
+            (int (*)(intptr_t *, libbfio_error_t **))qemu_libbfio_is_open,
+            (int (*)(intptr_t *, size64_t *, libbfio_error_t **))qemu_libbfio_get_size,
+            LIBBFIO_FLAG_IO_HANDLE_MANAGED
+                    | LIBBFIO_FLAG_IO_HANDLE_CLONE_BY_FUNCTION,
+            &bfio_error) != 1) {
+        error_setg(errp, "Could not initialize libbfio handle.");
+
+        gchar *error_msg = g_malloc0(1024);
+        if (libbfio_error_sprint(bfio_error, error_msg, 1023) == 1) {
+            error_append_hint(errp, "libbfio error was: %s\n", error_msg);
+        }
+        g_free(error_msg);
+        libbfio_error_free(&bfio_error);
+
+        ret = -EINVAL;
+        goto cleanup;
+    }
+    // we just gave up responsibility for the io handle
+    io_handle = 0;
+
+    if (libbfio_pool_initialize(&s->bfio_pool, 0,
+                                LIBBFIO_POOL_UNLIMITED_NUMBER_OF_OPEN_HANDLES,
+                                &bfio_error) != 1) {
+        error_setg(errp, "Could not initialize libbfio io pool.");
+
+        gchar *error_msg = g_malloc0(1024);
+        if (libbfio_error_sprint(bfio_error, error_msg, 1023) == 1) {
+            error_append_hint(errp, "libbfio error was: %s\n", error_msg);
+        }
+        g_free(error_msg);
+        libbfio_error_free(&bfio_error);
+
+        ret = -EINVAL;
+        goto cleanup;
+    }
+
+    if (libbfio_pool_append_handle(s->bfio_pool, &pool_handle_index,
+                                   bfio_handle, LIBBFIO_OPEN_READ,
+                                   &bfio_error) != 1) {
+        error_setg(errp, "Could not append bfio handle to io pool.");
+
+        gchar *error_msg = g_malloc0(1024);
+        if (libbfio_error_sprint(bfio_error, error_msg, 1023) == 1) {
+            error_append_hint(errp, "libbfio error was: %s\n", error_msg);
+        }
+        g_free(error_msg);
+        libbfio_error_free(&bfio_error);
+
+        ret = -EINVAL;
+        goto cleanup;
+    }
+    // we just gave up responsibility for the io handle
+    bfio_handle = 0;
+
+    /* Prepare the handle pointer */
+    if (libewf_handle_initialize(&s->ewf_handle, &ewf_error) != 1) {
+        error_setg(errp, "Could not initialize ewf handle.");
+
+        gchar *error_msg = g_malloc0(1024);
+        if (libewf_error_sprint(ewf_error, error_msg, 1023) == 1) {
+            error_append_hint(errp, "libbfio error was: %s\n", error_msg);
+        }
+        g_free(error_msg);
+        libewf_error_free(&ewf_error);
+
+        ret = -EINVAL;
+        goto cleanup;
+    }
+
+    if (libewf_handle_open_file_io_pool(s->ewf_handle, s->bfio_pool,
+                                        LIBEWF_ACCESS_FLAG_READ, &bfio_error) != 1) {
+        error_setg(errp, "Could not open ewf io pool.");
+
+        gchar *error_msg = g_malloc0(1024);
+        if (libbfio_error_sprint(bfio_error, error_msg, 1023) == 1) {
+            error_append_hint(errp, "libewf error was: %s\n", error_msg);
+        }
+        g_free(error_msg);
+        libbfio_error_free(&bfio_error);
+
+        ret = -EINVAL;
+        goto cleanup;
+    }
+
+    /* Query the number of bytes per sector contained in EWF files */
+    if (libewf_handle_get_bytes_per_sector(s->ewf_handle, &ewf_bytes_per_sector,
+                                           &ewf_error) != 1) {
+        error_setg(errp, "Could not determine EWF sector size.");
+
+        gchar *error_msg = g_malloc0(1024);
+        if (libewf_error_sprint(ewf_error, error_msg, 1023) == 1) {
+            error_append_hint(errp, "libewf error was: %s\n", error_msg);
+        }
+        g_free(error_msg);
+        libewf_error_free(&ewf_error);
+
+        ret = -EINVAL;
+        goto cleanup;
+    }
+
+    /* Query the total number of sectors contained in EWF files */
+    if (libewf_handle_get_number_of_sectors(s->ewf_handle, &ewf_media_sectors,
+                                            &ewf_error) != 1) {
+        error_setg(errp, "Could not determine EWF sector count.");
+
+        gchar *error_msg = g_malloc0(1024);
+        if (libewf_error_sprint(ewf_error, error_msg, 1023) == 1) {
+            error_append_hint(errp, "libewf error was: %s\n", error_msg);
+        }
+        g_free(error_msg);
+        libewf_error_free(&bfio_error);
+
+        ret = -EINVAL;
+        goto cleanup;
+    }
+
+    // this operation truncates the file at BDRV_SECTOR_SIZE alignment if
+    // the ewf media is not a multiple of BDRV_SECTOR_SIZE.
+    // this is conforming with all other Qemu bdrvs.
+    bs->total_sectors = (ewf_media_sectors * ewf_bytes_per_sector) / BDRV_SECTOR_SIZE;
+
+    return ret;
+
+cleanup:
+    if (libewf_handle_free(&s->ewf_handle, 0) != 1) {
+        error_append_hint(errp, "Fatal in cleanup: Could not free memory for ewf handle.");
+    }
+    if (libbfio_pool_free(&s->bfio_pool, 0) != 1) {
+        error_append_hint(errp, "Fatal in cleanup: Could not free memory for libbfio pool.");
+    }
+    if (libbfio_handle_free(&bfio_handle, 0) != 1) {
+        error_append_hint(errp, "Fatal in cleanup: Could not free memory for libbfio handle.");
+    }
+    if (qemu_libbfio_io_handle_free(&io_handle, 0) != 1) {
+        error_append_hint(errp, "Fatal in cleanup: Could not free memory for libbfio qemu io handle.");
+    }
+    return ret;
 }
 
 static void ewf_close(BlockDriverState *bs)
