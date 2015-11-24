@@ -317,7 +317,30 @@ int qemu_libbfio_get_size(qemu_libbfio_io_handle *io_handle, size64_t *size,
 
 static int ewf_probe(const uint8_t *buf, int buf_size, const char *filename)
 {
-	return -1;
+    // buf contains the first buf_size bytes of the file.
+    // we use the first few bytes to look for a EWF header as described
+    // in the EWF and EWF 2.0 file format specifications
+
+    // we need at least the first 8 bytes of a file
+    if (!buf || buf_size < 8) {
+        return 0;
+    }
+
+    // EWF (1.x):
+    if (memcmp("EVF\x09\x0d\x0a\xff\x00", buf, 8) == 0) {
+        return 100;
+    }
+    // don't check for LVF header (logical file evidence) as only full disk
+    // images make sense for Qemu.
+
+    // EWF 2.0
+    if (memcmp("EVF2\x0d\x0a\x81\x00", buf, 8) == 0) {
+        return 100;
+    }
+    // don't check for LVF2 header (logical file evidence) as only full disk
+    // images make sense for Qemu.
+
+    return 0;
 }
 
 static int ewf_open(BlockDriverState *bs, QDict *options, int flags,
