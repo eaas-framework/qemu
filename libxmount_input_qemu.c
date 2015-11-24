@@ -6,6 +6,8 @@
  */
 
 #include <stdint.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <xmount/libxmount_input/libxmount_input.h>
 
 #include "block/block.h"
@@ -63,7 +65,27 @@ typedef struct {
 
     BlockDriverState *bds;
     char writable;
+    pid_t pid;
 } XmountQemuHandle;
+
+/*
+ * Qemu's coroutine implementation looses its magic powers if the pid changes
+ * changes and causes bdrv_* functions to hang forever. Unfortunately,
+ * xmount/FUSE daemonizes and thus changes the pid.
+ * This function should be called every time before the bdrv is accessed.
+ * It re-creates a new Qemu AIO context (with the new pid) and assigns it
+ * to the bdrv. The old context will be released by bdrv_set_aio_context().
+ */
+static void reinit_aio_context(XmountQemuHandle *handle) {
+    pid_t pid = getpid();
+    AioContext *aio_context = 0;
+
+    if (handle->pid != pid) {
+        aio_context = aio_context_new(0);
+        bdrv_set_aio_context(handle->bds, aio_context);
+        handle->pid = pid;
+    }
+}
 
 
 int xmount_qemu_create_handle(void **pp_handle,
@@ -78,6 +100,7 @@ int xmount_qemu_create_handle(void **pp_handle,
 
     memset(handle, 0, sizeof(XmountQemuHandle));
     handle->debug = debug;
+    handle->pid = getpid();
 
     Error *error = 0;
     if (qemu_init_main_loop(&error)) {
@@ -93,6 +116,9 @@ int xmount_qemu_create_handle(void **pp_handle,
 }
 
 int xmount_qemu_destroy_handle(void **pp_handle) {
+    XmountQemuHandle *handle = (XmountQemuHandle *)*pp_handle;
+    reinit_aio_context(handle);
+
     bdrv_close_all();
     free(*pp_handle);
     *pp_handle = 0;
@@ -103,6 +129,7 @@ int xmount_qemu_open(void *p_handle,
                      const char **pp_filename_arr,
                      uint64_t filename_arr_len) {
     XmountQemuHandle *handle = (XmountQemuHandle *)p_handle;
+    reinit_aio_context(handle);
 
     if (filename_arr_len != 1) {
         return XMOUNT_QEMU_SINGLE_FILE;
@@ -123,6 +150,7 @@ int xmount_qemu_open(void *p_handle,
 
 int xmount_qemu_close(void *p_handle) {
     XmountQemuHandle *handle = (XmountQemuHandle *)p_handle;
+    reinit_aio_context(handle);
 
     bdrv_close(handle->bds);
 
@@ -132,6 +160,7 @@ int xmount_qemu_close(void *p_handle) {
 int xmount_qemu_size(void *p_handle,
                      uint64_t *p_size) {
     XmountQemuHandle *handle = (XmountQemuHandle *)p_handle;
+    reinit_aio_context(handle);
 
     if (p_size) {
         *p_size = bdrv_getlength(handle->bds);
@@ -148,6 +177,7 @@ int xmount_qemu_read(void *p_handle,
                      size_t *p_read,
                      int *p_errno) {
     XmountQemuHandle *handle = (XmountQemuHandle *)p_handle;
+    reinit_aio_context(handle);
 
     if (!p_buf) {
         LIBXMOUNT_LOG_ERROR("[QEMU] p_buf argument to read function was 0.");
@@ -201,6 +231,7 @@ int xmount_qemu_write(void *p_handle,
                       size_t *p_written,
                       int *p_errno) {
     XmountQemuHandle *handle = (XmountQemuHandle *)p_handle;
+    reinit_aio_context(handle);
 
     if (!p_buf) {
         LIBXMOUNT_LOG_ERROR("[QEMU] p_buf argument to write function was 0.");
