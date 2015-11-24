@@ -542,8 +542,49 @@ cleanup:
     return ret;
 }
 
-static void ewf_close(BlockDriverState *bs)
-{
+static void ewf_close(BlockDriverState *bs) {
+    BDRVEwfState *s = (BDRVEwfState *) bs->opaque;
+    libewf_error_t *ewf_error = 0;
+    libbfio_error_t *bfio_error = 0;
+
+    // Yes, libewf's return values on success are actually 0 for *_close*
+    // and 1 for everything else...
+    if (libewf_handle_close(s->ewf_handle, &ewf_error) != 0) {
+#ifdef DEBUG_EWF
+        gchar *error_msg = g_malloc0(1024);
+        if (libewf_error_sprint(ewf_error, error_msg, 1023) == 1) {
+            DPRINTF("%s: %s", __FUNC__, error_msg);
+        }
+        g_free(error_msg);
+#endif
+    }
+    if (libewf_handle_free(&s->ewf_handle, &ewf_error) != 1) {
+#ifdef DEBUG_EWF
+        gchar *error_msg = g_malloc0(1024);
+        if (libewf_error_sprint(ewf_error, error_msg, 1023) == 1) {
+            DPRINTF("%s: %s", __FUNC__, error_msg);
+        }
+        g_free(error_msg);
+#endif
+    }
+    if (libbfio_pool_close_all(s->bfio_pool, &bfio_error) != 0) {
+#ifdef DEBUG_EWF
+        gchar *error_msg = g_malloc0(1024);
+        if (libbfio_error_sprint(bfio_error, error_msg, 1023) == 1) {
+            DPRINTF("%s: %s", __FUNC__, error_msg);
+        }
+        g_free(error_msg);
+#endif
+    }
+    if (libbfio_pool_free(&s->bfio_pool, &bfio_error) != 1) {
+#ifdef DEBUG_EWF
+        gchar *error_msg = g_malloc0(1024);
+        if (libbfio_error_sprint(bfio_error, error_msg, 1023) == 1) {
+            DPRINTF("%s: %s", __FUNC__, error_msg);
+        }
+        g_free(error_msg);
+#endif
+    }
 }
 
 static BlockDriver bdrv_ewf = {
