@@ -724,7 +724,15 @@ QemuCocoaView *cocoaView;
     }
 
     if (mouse_event) {
-        if (last_buttons != buttons) {
+        /* Don't send button events to the guest unless we've got a
+         * mouse grab or window focus. If we have neither then this event
+         * is the user clicking on the background window to activate and
+         * bring us to the front, which will be done by the sendEvent
+         * call below. We definitely don't want to pass that click through
+         * to the guest.
+         */
+        if ((isMouseGrabbed || [[self window] isKeyWindow]) &&
+            (last_buttons != buttons)) {
             static uint32_t bmap[INPUT_BUTTON_MAX] = {
                 [INPUT_BUTTON_LEFT]       = MOUSE_EVENT_LBUTTON,
                 [INPUT_BUTTON_MIDDLE]     = MOUSE_EVENT_MBUTTON,
@@ -1113,10 +1121,13 @@ QemuCocoaView *cocoaView;
         }
 
         Error *err = NULL;
-        qmp_change_blockdev([drive cStringUsingEncoding: NSASCIIStringEncoding],
-                            [file cStringUsingEncoding: NSASCIIStringEncoding],
-                            "raw",
-                            &err);
+        qmp_blockdev_change_medium([drive cStringUsingEncoding:
+                                          NSASCIIStringEncoding],
+                                   [file cStringUsingEncoding:
+                                         NSASCIIStringEncoding],
+                                   true, "raw",
+                                   false, 0,
+                                   &err);
         handleAnyDeviceErrors(err);
     }
 }

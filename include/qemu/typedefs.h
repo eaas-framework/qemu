@@ -3,12 +3,12 @@
 
 /* A load of opaque types so that device init declarations don't have to
    pull in all the real definitions.  */
-struct Monitor;
 
 /* Please keep this list in alphabetical order */
 typedef struct AdapterInfo AdapterInfo;
 typedef struct AddressSpace AddressSpace;
 typedef struct AioContext AioContext;
+typedef struct AllwinnerAHCIState AllwinnerAHCIState;
 typedef struct AudioState AudioState;
 typedef struct BlockBackend BlockBackend;
 typedef struct BlockBackendRootState BlockBackendRootState;
@@ -18,8 +18,8 @@ typedef struct BusState BusState;
 typedef struct CharDriverState CharDriverState;
 typedef struct CompatProperty CompatProperty;
 typedef struct CPUAddressSpace CPUAddressSpace;
-typedef struct DeviceState DeviceState;
 typedef struct DeviceListener DeviceListener;
+typedef struct DeviceState DeviceState;
 typedef struct DisplayChangeListener DisplayChangeListener;
 typedef struct DisplayState DisplayState;
 typedef struct DisplaySurface DisplaySurface;
@@ -43,7 +43,9 @@ typedef struct MemoryRegion MemoryRegion;
 typedef struct MemoryRegionSection MemoryRegionSection;
 typedef struct MigrationIncomingState MigrationIncomingState;
 typedef struct MigrationParams MigrationParams;
+typedef struct MigrationState MigrationState;
 typedef struct Monitor Monitor;
+typedef struct MonitorDef MonitorDef;
 typedef struct MouseTransformInfo MouseTransformInfo;
 typedef struct MSIMessage MSIMessage;
 typedef struct NetClientState NetClientState;
@@ -61,12 +63,13 @@ typedef struct PCIESlot PCIESlot;
 typedef struct PCIExpressDevice PCIExpressDevice;
 typedef struct PCIExpressHost PCIExpressHost;
 typedef struct PCIHostState PCIHostState;
-typedef struct PCMachineState PCMachineState;
 typedef struct PCMachineClass PCMachineClass;
+typedef struct PCMachineState PCMachineState;
 typedef struct PCMCIACardState PCMCIACardState;
 typedef struct PixelFormat PixelFormat;
-typedef struct PropertyInfo PropertyInfo;
+typedef struct PostcopyDiscardState PostcopyDiscardState;
 typedef struct Property Property;
+typedef struct PropertyInfo PropertyInfo;
 typedef struct QEMUBH QEMUBH;
 typedef struct QemuConsole QemuConsole;
 typedef struct QEMUFile QEMUFile;
@@ -75,8 +78,9 @@ typedef struct QemuOpts QemuOpts;
 typedef struct QemuOptsList QemuOptsList;
 typedef struct QEMUSGList QEMUSGList;
 typedef struct QEMUSizedBuffer QEMUSizedBuffer;
-typedef struct QEMUTimerListGroup QEMUTimerListGroup;
 typedef struct QEMUTimer QEMUTimer;
+typedef struct QEMUTimerListGroup QEMUTimerListGroup;
+typedef struct RAMBlock RAMBlock;
 typedef struct Range Range;
 typedef struct SerialState SerialState;
 typedef struct SHPCDevice SHPCDevice;
@@ -85,6 +89,5 @@ typedef struct SSIBus SSIBus;
 typedef struct uWireSlave uWireSlave;
 typedef struct VirtIODevice VirtIODevice;
 typedef struct Visitor Visitor;
-typedef struct MonitorDef MonitorDef;
 
 #endif /* QEMU_TYPEDEFS_H */

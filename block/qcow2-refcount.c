@@ -560,13 +560,16 @@ static int alloc_refcount_block(BlockDriverState *bs,
     }
 
     /* Hook up the new refcount table in the qcow2 header */
-    uint8_t data[12];
-    cpu_to_be64w((uint64_t*)data, table_offset);
-    cpu_to_be32w((uint32_t*)(data + 8), table_clusters);
+    struct QEMU_PACKED {
+        uint64_t d64;
+        uint32_t d32;
+    } data;
+    cpu_to_be64w(&data.d64, table_offset);
+    cpu_to_be32w(&data.d32, table_clusters);
     BLKDBG_EVENT(bs->file, BLKDBG_REFBLOCK_ALLOC_SWITCH_TABLE);
     ret = bdrv_pwrite_sync(bs->file->bs,
                            offsetof(QCowHeader, refcount_table_offset),
-                           data, sizeof(data));
+                           &data, sizeof(data));
     if (ret < 0) {
         goto fail_table;
     }
@@ -1241,7 +1244,7 @@ fail:
 /* refcount checking functions */
 
 
-static size_t refcount_array_byte_size(BDRVQcow2State *s, uint64_t entries)
+static uint64_t refcount_array_byte_size(BDRVQcow2State *s, uint64_t entries)
 {
     /* This assertion holds because there is no way we can address more than
      * 2^(64 - 9) clusters at once (with cluster size 512 = 2^9, and because
