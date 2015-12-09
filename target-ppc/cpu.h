@@ -122,9 +122,15 @@ enum powerpc_mmu_t {
     /* Architecture 2.06 variant                               */
     POWERPC_MMU_2_06       = POWERPC_MMU_64 | POWERPC_MMU_1TSEG
                              | POWERPC_MMU_AMR | 0x00000003,
+    /* Architecture 2.06 "degraded" (no 1T segments)           */
+    POWERPC_MMU_2_06a      = POWERPC_MMU_64 | POWERPC_MMU_AMR
+                             | 0x00000003,
     /* Architecture 2.07 variant                               */
     POWERPC_MMU_2_07       = POWERPC_MMU_64 | POWERPC_MMU_1TSEG
                              | POWERPC_MMU_AMR | 0x00000004,
+    /* Architecture 2.07 "degraded" (no 1T segments)           */
+    POWERPC_MMU_2_07a      = POWERPC_MMU_64 | POWERPC_MMU_AMR
+                             | 0x00000004,
 #endif /* defined(TARGET_PPC64) */
 };
 
@@ -677,6 +683,27 @@ enum {
 /* enabled exception summary */
 #define fpscr_eex (((env->fpscr) >> FPSCR_XX) & ((env->fpscr) >> FPSCR_XE) &  \
                    0x1F)
+
+#define FP_FX		(1ull << FPSCR_FX)
+#define FP_FEX		(1ull << FPSCR_FEX)
+#define FP_OX		(1ull << FPSCR_OX)
+#define FP_OE		(1ull << FPSCR_OE)
+#define FP_UX		(1ull << FPSCR_UX)
+#define FP_UE		(1ull << FPSCR_UE)
+#define FP_XX		(1ull << FPSCR_XX)
+#define FP_XE		(1ull << FPSCR_XE)
+#define FP_ZX		(1ull << FPSCR_ZX)
+#define FP_ZE		(1ull << FPSCR_ZE)
+#define FP_VX		(1ull << FPSCR_VX)
+#define FP_VXSNAN	(1ull << FPSCR_VXSNAN)
+#define FP_VXISI	(1ull << FPSCR_VXISI)
+#define FP_VXIMZ	(1ull << FPSCR_VXIMZ)
+#define FP_VXZDZ	(1ull << FPSCR_VXZDZ)
+#define FP_VXIDI	(1ull << FPSCR_VXIDI)
+#define FP_VXVC		(1ull << FPSCR_VXVC)
+#define FP_VXCVI	(1ull << FPSCR_VXCVI)
+#define FP_VE		(1ull << FPSCR_VE)
+#define FP_FI		(1ull << FPSCR_FI)
 
 /*****************************************************************************/
 /* Vector status and control register */
