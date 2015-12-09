@@ -2136,6 +2136,8 @@ static int get_monitor_def(target_long *pval, const char *name)
 {
     const MonitorDef *md = target_monitor_defs();
     void *ptr;
+    uint64_t tmp = 0;
+    int ret;
 
     if (md == NULL) {
         return -1;
@@ -2163,7 +2165,13 @@ static int get_monitor_def(target_long *pval, const char *name)
             return 0;
         }
     }
-    return -1;
+
+    ret = target_get_monitor_def(mon_get_cpu(), name, &tmp);
+    if (!ret) {
+        *pval = (target_long) tmp;
+    }
+
+    return ret;
 }
 
 static void next(void)
@@ -3408,13 +3416,18 @@ static void vm_completion(ReadLineState *rs, const char *str)
     readline_set_completion_index(rs, len);
     while ((bs = bdrv_next(bs))) {
         SnapshotInfoList *snapshots, *snapshot;
+        AioContext *ctx = bdrv_get_aio_context(bs);
+        bool ok = false;
 
-        if (!bdrv_can_snapshot(bs)) {
+        aio_context_acquire(ctx);
+        if (bdrv_can_snapshot(bs)) {
+            ok = bdrv_query_snapshot_info_list(bs, &snapshots, NULL) == 0;
+        }
+        aio_context_release(ctx);
+        if (!ok) {
             continue;
         }
-        if (bdrv_query_snapshot_info_list(bs, &snapshots, NULL)) {
-            continue;
-        }
+
         snapshot = snapshots;
         while (snapshot) {
             char *completion = snapshot->value->name;
@@ -3836,7 +3849,7 @@ static QDict *qmp_check_input_obj(QObject *input_obj, Error **errp)
     return input_dict;
 }
 
-static void handle_qmp_command(JSONMessageParser *parser, QList *tokens)
+static void handle_qmp_command(JSONMessageParser *parser, GQueue *tokens)
 {
     Error *local_err = NULL;
     QObject *obj, *data;
@@ -3894,6 +3907,7 @@ static void handle_qmp_command(JSONMessageParser *parser, QList *tokens)
 err_out:
     monitor_protocol_emitter(mon, data, local_err);
     qobject_decref(data);
+    error_free(local_err);
     QDECREF(input);
     QDECREF(args);
 }

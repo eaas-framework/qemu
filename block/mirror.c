@@ -384,9 +384,11 @@ static void mirror_exit(BlockJob *job, void *opaque)
         aio_context_release(replace_aio_context);
     }
     g_free(s->replaces);
+    bdrv_op_unblock_all(s->target, s->common.blocker);
     bdrv_unref(s->target);
     block_job_completed(&s->common, data->ret);
     g_free(data);
+    bdrv_drained_end(src);
     bdrv_unref(src);
 }
 
@@ -606,6 +608,9 @@ immediate_exit:
 
     data = g_malloc(sizeof(*data));
     data->ret = ret;
+    /* Before we switch to target in mirror_exit, make sure data doesn't
+     * change. */
+    bdrv_drained_begin(s->common.bs);
     block_job_defer_to_main_loop(&s->common, mirror_exit, data);
 }
 
@@ -741,9 +746,12 @@ static void mirror_start_job(BlockDriverState *bs, BlockDriverState *target,
     s->dirty_bitmap = bdrv_create_dirty_bitmap(bs, granularity, NULL, errp);
     if (!s->dirty_bitmap) {
         g_free(s->replaces);
-        block_job_release(bs);
+        block_job_unref(&s->common);
         return;
     }
+
+    bdrv_op_block_all(s->target, s->common.blocker);
+
     bdrv_set_enable_write_cache(s->target, true);
     if (s->target->blk) {
         blk_set_on_error(s->target->blk, on_target_error, on_target_error);
