@@ -120,7 +120,9 @@ Build-Depends: debhelper (>= 9),
  liblzo2-dev,
  libsnappy-dev,
 # --enable-xmount-input
- xmount (>= 0.7.4bwfla3)
+ xmount (>= 0.7.4bwfla3),
+# --enable-libewf
+ libewf-dev (>= 20140608)
 Build-Conflicts: oss4-dev
 Standards-Version: 3.9.6
 Homepage: http://www.qemu.org/
