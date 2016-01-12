@@ -1,3 +1,12 @@
+qemu (1:2.5.0+dfsg-0bwfla1) UNRELEASED; urgency=medium
+
+  [ Thomas Liebetraut ]
+  * Non-maintainer upload.
+  * New upstream release (2.5.0).
+  * Add ewf block driver module and libewf dependency.
+
+ --  <thomas@bw-fla.uni-freiburg.de>  Thu, 07 Jan 2016 14:44:26 +0100
+
 qemu (1:2.4.50+dfsg-0bwfla1a) UNRELEASED; urgency=medium
 
   * Non-maintainer upload.
