@@ -1,0 +1,13 @@
+Index: qemu/block/curl.c
+===================================================================
+--- qemu.orig/block/curl.c	2016-01-12 18:22:10.454958999 +0100
++++ qemu/block/curl.c	2016-01-12 18:23:07.218958999 +0100
+@@ -65,7 +65,7 @@
+ #define CURL_NUM_ACB    8
+ #define SECTOR_SIZE     512
+ #define READ_AHEAD_DEFAULT (256 * 1024)
+-#define CURL_TIMEOUT_DEFAULT 5
++#define CURL_TIMEOUT_DEFAULT 120
+ #define CURL_TIMEOUT_MAX 10000
+ 
+ #define FIND_RET_NONE   0

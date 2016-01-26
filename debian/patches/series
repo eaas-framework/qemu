@@ -4,3 +4,4 @@ use-data-path.patch
 mjt-set-oem-in-rsdt-like-slic.diff
 
 
+curl-timeout-2-minutes.patch
