@@ -59,12 +59,15 @@ enum XmountQemuErrors {
 
 #define QEMU_OPTION_WRITABLE "qemuwritable"
 #define QEMU_OPTION_WRITABLE_DEFAULT "false"
+#define QEMU_OPTION_CACHE "bdrv_cache"
+#define QEMU_OPTION_CACHE_DEFAULT "writethrough"
 
 typedef struct {
     uint8_t debug;
 
     BlockDriverState *bds;
     char writable;
+    char *cache;
     pid_t pid;
 } XmountQemuHandle;
 
@@ -120,6 +123,10 @@ int xmount_qemu_destroy_handle(void **pp_handle) {
     reinit_aio_context(handle);
 
     bdrv_close_all();
+    if (handle->cache) {
+        free(handle->cache);
+        handle->cache = 0;
+    }
     free(*pp_handle);
     *pp_handle = 0;
     return XMOUNT_QEMU_OK;
@@ -138,6 +145,10 @@ int xmount_qemu_open(void *p_handle,
     int flags = 0;
     if (handle->writable) {
         flags = BDRV_O_RDWR;
+    }
+    if (handle->cache && bdrv_parse_cache_flags(handle->cache, &flags)) {
+        printf("Invalid cache mode `%s'", handle->cache);
+        return XMOUNT_QEMU_CANNOT_OPEN;
     }
     Error *error = 0;
     if (bdrv_open(&handle->bds, pp_filename_arr[0], 0, 0, flags, &error)) {
@@ -280,9 +291,10 @@ int xmount_qemu_write(void *p_handle,
 
 int xmount_qemu_options_help(const char **pp_help) {
     char *help = 0;
-    int l = asprintf(&help, "    %-12s : Specifies if write operations are to be allowed on "
-                     "the source image. Default: %s\n",
-                     QEMU_OPTION_WRITABLE, QEMU_OPTION_WRITABLE_DEFAULT);
+    int l = asprintf(&help, "    %-12s : Specifies if write operations are to be allowed on the source image. Default: %s\n"
+                            "    %-12s : Specifies the qemu bdrv caching mode. Default: %s\n",
+                     QEMU_OPTION_WRITABLE, QEMU_OPTION_WRITABLE_DEFAULT,
+                     QEMU_OPTION_CACHE, QEMU_OPTION_CACHE_DEFAULT);
 
     if (!help || l < 0) {
         return XMOUNT_QEMU_BAD_ALLOC;
@@ -313,6 +325,14 @@ int xmount_qemu_options_parse(void *p_handle,
 
             handle->writable = (strcmp(value, "true") == 0 || strcmp(value, "1") == 0);
             free(value);
+        }
+        if (strcmp(option->p_key, QEMU_OPTION_CACHE) == 0) {
+            size_t value_length = strlen(option->p_value) + 1;
+            handle->cache = (char *)calloc(value_length, sizeof(char));
+            if (!handle->cache) {
+                return XMOUNT_QEMU_BAD_ALLOC;
+            }
+            strncpy(handle->cache, option->p_value, value_length);
         }
     }
 
