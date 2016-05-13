@@ -5,6 +5,7 @@
  *      Author: thomas
  */
 
+#include <qemu/osdep.h>
 #include <stdint.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -137,6 +138,7 @@ int xmount_qemu_open(void *p_handle,
                      uint64_t filename_arr_len) {
     XmountQemuHandle *handle = (XmountQemuHandle *)p_handle;
     reinit_aio_context(handle);
+    bool writethrough;
 
     if (filename_arr_len != 1) {
         return XMOUNT_QEMU_SINGLE_FILE;
@@ -146,7 +148,7 @@ int xmount_qemu_open(void *p_handle,
     if (handle->writable) {
         flags = BDRV_O_RDWR;
     }
-    if (handle->cache && bdrv_parse_cache_flags(handle->cache, &flags)) {
+    if (handle->cache && bdrv_parse_cache_mode(handle->cache, &flags, &writethrough)) {
         printf("Invalid cache mode `%s'", handle->cache);
         return XMOUNT_QEMU_CANNOT_OPEN;
     }
@@ -163,7 +165,7 @@ int xmount_qemu_close(void *p_handle) {
     XmountQemuHandle *handle = (XmountQemuHandle *)p_handle;
     reinit_aio_context(handle);
 
-    bdrv_close(handle->bds);
+    bdrv_close_all();
 
     return XMOUNT_QEMU_OK;
 }
