@@ -21,11 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#include "qemu-common.h"
-#include "qemu/error-report.h"
+#include "qemu/osdep.h"
+#include "qapi/error.h"
 #include "block/block_int.h"
-#include "qapi/qmp/qbool.h"
-#include "qapi/qmp/qstring.h"
+#include "qemu/cutils.h"
 
 #include <libewf.h>
 #include <libbfio.h>
