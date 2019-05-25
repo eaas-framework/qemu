@@ -91,8 +91,6 @@ Build-Depends: debhelper (>= 9),
 :debian: libvdeplug-dev,
 # needed for sdl
  libx11-dev,
-# --enable-xen	linux-amd64|linux-i386
- libxen-dev [linux-amd64 linux-i386],
 # XXX need to check minimum linux-headers requiriment
  linux-libc-dev (>= 2.6.34) [linux-any],
 # --enable-uuid
@@ -115,7 +113,6 @@ Build-Depends: debhelper (>= 9),
 ##:debian: libnfs-dev (>> 1.9.4)
 ##--enable-netmap todo bsd
 ##--enable-quorum todo needs gcrypt
-##--enable-xen-pci-passthrough todo
  libbz2-dev,
  liblzo2-dev,
  libsnappy-dev,
