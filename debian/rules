@@ -26,8 +26,8 @@ V ?= 1
 # list of packages we're supposed to build
 BUILD_PACKAGES = $(call dpkg_late_eval,BUILD_PACKAGES,dh_listpackages)
 
-enable_system = $(if $(filter qemu-system,${BUILD_PACKAGES}),enable,disable)
-enable_linux_user = $(if $(filter qemu-user,${BUILD_PACKAGES}),enable,disable)
+enable_system = disable
+enable_linux_user = disable
 
 DATAPATH = /usr/share/qemu:/usr/share/seabios:/usr/lib/ipxe/qemu
 
@@ -149,19 +149,6 @@ binary-arch: ai := -a
 binary-arch: install
 binary: install
 
-define inst-system
-	mkdir -p debian/qemu-system-$1/usr/share/man/man1 debian/qemu-system-$1/usr/bin
-	for t in ${sysarch_$1}; do \
-	    mv debian/tmp/usr/bin/qemu-system-$$t debian/qemu-system-$1/usr/bin/; \
-	    echo ".so man1/qemu-system.1" > debian/qemu-system-$1/usr/share/man/man1/qemu-system-$$t.1; \
-	done
-	echo sysarch:$1=${sysarch_$1} > debian/qemu-system-$1.substvars
-	echo sysprovides:$1=${addprefix qemu-system-,${filter-out $1,${sysarch_$1}}} | \
-	  sed -e 's/ /, /g' -e 'y/_/-/' >> debian/qemu-system-$1.substvars
-	dh_link -pqemu-system-$1 usr/share/doc/qemu-system-common usr/share/doc/qemu-system-$1/common
-
-endef
-
 install: build-stamp
 	dh_testdir
 	dh_testroot
@@ -171,110 +158,12 @@ install: build-stamp
 	# system and utils install
 	$(MAKE) -C qemu-build DESTDIR=$(CURDIR)/debian/tmp install
 
-ifeq (${enable_system},enable)
-
-	# qemu-system subpackages
-	mv debian/tmp/usr/share/man/man1/qemu.1 debian/tmp/usr/share/man/man1/qemu-system.1
-	$(foreach s,${systems},$(call inst-system,$s))
-
-ifneq ($(filter $(DEB_HOST_ARCH),amd64 i386),)
-# We used to load kvm module on x86 using an initscript,
-# but modern kernels do that automatically.  Remove the initscript.
-# Remove this fragment for stretch+1.
-	for x in preinst postinst postrm; do \
-	  echo 'dpkg-maintscript-helper rm_conffile /etc/init.d/qemu-system-x86 1:2.2+dfsg-3~ -- "$$@"' \
-	    >> debian/qemu-system-x86.$$x.debhelper ; \
-	done
-# there's no need to restore the links b/c kernel autoloads our modules
-	echo 'if [ configure = "$$1" ] && dpkg --compare-versions "$$2" le-nl 1:2.2+dfsg-3~; then update-rc.d qemu-system-x86 remove >/dev/null; fi' \
-	  >> debian/qemu-system-x86.postinst.debhelper
-endif
-
-# remove now-unused target-x86_64.conf (and /etc/qemu dir too, see #797608)
-	for x in preinst postinst postrm; do \
-	  echo 'dpkg-maintscript-helper rm_conffile /etc/qemu/target-x86_64.conf 1:2.4+dfsg-1~ -- "$$@"' \
-            >> debian/qemu-system-x86.$$x.debhelper ; \
-	  echo '[ -d /etc/qemu ] && rmdir /etc/qemu 2>/dev/null || :' \
-	    >> debian/qemu-system-x86.$$x.debhelper; \
-	done
-
-ifeq ($(DEB_HOST_ARCH_OS),linux)
-
-# /usr/bin/kvm compat script.  This needs some more work for other arches
-# How about a manpage for it?
-ifneq ($(filter $(DEB_HOST_ARCH),amd64 i386),)
-	dh_install -pqemu-kvm debian/kvm /usr/bin/
-	dh_install -pqemu-kvm debian/kvm.1 /usr/share/man/man1/
-ifeq ($(VENDOR),UBUNTU)
-# on ubuntu there was kvm-spice package/binary which was used in libvirt xml
-	dh_link -pqemu-kvm usr/bin/kvm usr/bin/kvm-spice \
-		usr/bin/qemu-system-x86_64 usr/bin/qemu-system-x86_64-spice
-endif
-endif
-ifeq ($(VENDOR),UBUNTU)
-# apport hook is ubuntu-specific
-	dh_install -pqemu-system-common debian/source_qemu.py \
-		usr/share/apport/package-hooks/
-endif
-
-# virtfs-proxy-helper and qemu-bridge-helper are linux-specific
-	for f in usr/bin/virtfs-proxy-helper \
-	         usr/share/man/man1/virtfs-proxy-helper.1 \
-		 usr/lib/qemu/qemu-bridge-helper \
-	; do \
-	  mkdir -p debian/qemu-system-common/$${f%/*} ; \
-	  mv debian/tmp/$$f debian/qemu-system-common/$$f ; \
-	done
-
-endif # linux
-
-endif # enable_system
-
-ifeq ($(enable_linux_user),enable)
-	# qemu-user
-	mkdir -p debian/qemu-user/usr/bin debian/qemu-user/usr/share/man/man1
-	for t in ${user_targets}; do \
-	    mv debian/tmp/usr/bin/qemu-$$t \
-		debian/qemu-user/usr/bin ; \
-	    ln -s qemu-user.1 \
-		debian/qemu-user/usr/share/man/man1/qemu-$$t.1 ; \
-	done
-
-	# qemu-user-static
-	mkdir -p debian/qemu-user-static/usr/bin debian/qemu-user-static/usr/share/man/man1
-	for t in ${user_targets}; do \
-	    cp -p user-static-build/$$t-linux-user/qemu-$$t \
-		debian/qemu-user-static/usr/bin/qemu-$$t-static ; \
-	    ln -s qemu-user-static.1 \
-		    debian/qemu-user-static/usr/share/man/man1/qemu-$$t-static.1 ; \
-	done
-
-	# binfmt support
-	for x in postinst prerm; do \
-	    sed -e s/@SUFFIX@/-static/ -e s/@PACKAGE@/qemu-user-static/ \
-		debian/binfmt-update-in >> debian/qemu-user-static.$$x.debhelper ; \
-	    sed -e s/@SUFFIX@// -e s/@PACKAGE@/qemu-user-binfmt/ \
-		debian/binfmt-update-in >> debian/qemu-user-binfmt.$$x.debhelper ; \
-	done
-
-endif	# enable_linux_user
-
 # install whole thing so --list-missing works right
 	dh_install --list-missing
 # install the rest for arch/indep as needed
-	dh_installdocs ${ai} -Nqemu-user-binfmt
-	dh_installchangelogs ${ai} -Nqemu-user-binfmt
-	dh_installdocs ${ai} -pqemu-user-binfmt --link-doc=qemu-user
+	dh_installchangelogs ${ai} 
 	dh_installman ${ai}
 	dh_installudev ${ai}
-ifneq (${ai},-i)	# do not run this for binary-indep
-ifeq (${enable_system},enable)
-# qemu-ifup is arch-specific
-	install -D debian/qemu-ifup.$(DEB_HOST_ARCH_OS) \
-		debian/qemu-system-common/etc/qemu-ifup
-endif
-	dh_installinit -pqemu-guest-agent
-endif
 	dh_link ${ai}
 	dh_strip ${ai}
 	dh_compress ${ai}
@@ -282,18 +171,6 @@ endif
 	dh_makeshlibs ${ai}
 	dh_shlibdeps ${ai}
 	dh_installdeb ${ai}
-ifeq ($(enable_linux_user),enable)
-# after shlibdeps finished, grab ${shlibs:Depends} from -user package
-# and transform it into Built-Using field for -user-static.
-# See also dpkg-query bug #588505
-	if [ -f debian/qemu-user.substvars ]; then \
-	  pkgs=$$(sed -n -e's/([^)]*)//g' -e's/,//g' -e's/^shlibs:Depends=//p' debian/qemu-user.substvars); \
-	  srcs=; for p in $$pkgs; do \
-	    srcs="$$srcs $$(dpkg-query -f '$${source:Package} (= $${source:Version}),' -W $$p)"; \
-	  done ; \
-	  echo "built-using=$$srcs" >> debian/qemu-user-static.substvars ; \
-	fi
-endif
 	dh_gencontrol ${ai}
 	dh_md5sums ${ai}
 	dh_builddeb ${ai}
